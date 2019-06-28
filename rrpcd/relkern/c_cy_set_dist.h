@@ -1,0 +1,1 @@
+void c_relational_kernel(double *values, int *items, int *lengths, double *vertex_kernel,double *output,int n,int m, int n_threads, double gamma, int algorithm, int equal_size_only);

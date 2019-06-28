@@ -1,0 +1,1 @@
+void c_relational_kernel00(double *values, int *lengths, double *output,int n, int n_threads, double gamma, int equal_size_only);
