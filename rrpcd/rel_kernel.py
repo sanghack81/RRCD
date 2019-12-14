@@ -1,6 +1,6 @@
 import itertools
 from functools import lru_cache
-from typing import Optional, Dict, Iterable, AbstractSet
+from typing import Optional, Dict, Iterable, AbstractSet, Sequence, TypeVar
 
 import numpy as np
 import numpy.ma as ma
@@ -12,8 +12,11 @@ from sklearn.metrics import euclidean_distances
 from rrpcd.data import DataCenter
 from rrpcd.relkern.cy_set_dist import relational_kernel00
 
+T = TypeVar('T')
+
 
 def normalize_by_diag(k: Optional[np.ndarray]) -> Optional[np.ndarray]:
+    """ Given a kernel matrix, normalize the matrix by its diagonal making its diagonal 1s and the rest of values normalized accordingly. """
     if k is None:
         return None
 
@@ -26,11 +29,15 @@ def normalize_by_diag(k: Optional[np.ndarray]) -> Optional[np.ndarray]:
     return k
 
 
-def relational_kernel_matrix00(data, n_jobs, gamma, equal_size_only=False):
-    """ Simplified relational kernel matrix computation """
+def relational_kernel_matrix00(data, n_jobs: int, gamma: float, equal_size_only=False):
+    """ Simplified relational kernel matrix computation
 
-    def __unroll(list_of_list):
-        return list(itertools.chain(*list_of_list))
+
+    """
+
+    def __unroll(list_of_lists: Sequence[Sequence[T]]) -> Sequence[T]:
+        """ List of lists as a single list """
+        return list(itertools.chain(*list_of_lists))
 
     unrolled = __unroll(data)
     value_data = np.array(unrolled, dtype='float64', order='C')
@@ -44,7 +51,7 @@ def relational_kernel_matrix00(data, n_jobs, gamma, equal_size_only=False):
     return output
 
 
-def rbf_gamma_median(x, pass_D_squared=False):
+def rbf_gamma_median(x: np.ndarray, pass_D_squared=False):
     """ 1/(2*(median distance**2)) """
     assert len(x.shape) == 2
     D_squared = euclidean_distances(x, squared=True)
@@ -76,6 +83,8 @@ def _extract_unique_values(tups) -> np.ndarray:
 
 
 class RelationalKernelComputer:
+    """ Computes Kernel matrices from underlying data source """
+
     def __init__(self, datasource: DataCenter):
         self.datasource = datasource
         self.fetcher = self.datasource.fetcher
@@ -104,9 +113,22 @@ class RelationalKernelComputer:
 
 
 class RBFKernelComputer(RelationalKernelComputer):
-    """ Compute diagonal-normalized RBF kernel matrix with Gamma computed based on the median """
+    """ Compute a diagonal-normalized RBF kernel matrix with Gamma computed based on the median """
 
-    def __init__(self, datasource: DataCenter, *, additive, n_jobs=1, eqsize_only=False, k_cache_max_size=32):
+    def __init__(self, datasource: DataCenter, *, additive: float, n_jobs=1, eqsize_only=False, k_cache_max_size=32):
+        """
+
+        Parameters
+        ----------
+        datasource
+        additive : float
+            a small number to prevent zeros in resulting kernel matrix (TODO write detailed reasons)
+        n_jobs : int
+            a number of parallel jobs
+        eqsize_only : bool
+            Whether the similarity between two sets of different sizes should be 0
+        k_cache_max_size
+        """
         super().__init__(datasource)
 
         self.gamma = {crv.attr: rbf_gamma_median(self.datasource.simple_get(crv))
@@ -118,7 +140,7 @@ class RBFKernelComputer(RelationalKernelComputer):
 
         self.K = lru_cache(maxsize=k_cache_max_size)(self.K)  # for 1000x1000 approx 8MB
 
-    def K(self, rvar: RV):
+    def K(self, rvar: RV) -> np.ndarray:
         if rvar.is_canonical:
             data = self.datasource.simple_get(rvar)
             return self.K_comp(data, gamma_val=self.gamma[rvar.attr], simple=True)

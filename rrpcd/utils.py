@@ -1,7 +1,7 @@
 import os
 from contextlib import contextmanager
 from itertools import combinations
-from typing import Iterable, List, TypeVar, Set, Optional, Collection
+from typing import Iterable, List, TypeVar, Set, Optional, Collection, Sequence, Generator
 
 import numpy as np
 from pyrcds.model import RelationalPath
@@ -10,6 +10,7 @@ T = TypeVar('T')
 
 
 def mkdirs(newdir, mode=0o777):
+    """ creates a directory, if not exists """
     os.makedirs(newdir, mode=mode, exist_ok=True)
 
 
@@ -25,6 +26,7 @@ def with_default(v: Optional[T], dflt: Optional[T]) -> Optional[T]:
 
 
 def set_combinations(s: Iterable[T], n: int, randomized=False) -> Iterable[Set[T]]:
+    """ All sorted combinations of n elements in the given collection s returned as sets """
     if randomized:
         sets = [set(c) for c in combinations(sorted(s), n)]
         np.random.shuffle(sets)
@@ -38,7 +40,7 @@ def is_1to1(P: RelationalPath) -> bool:
     return not P.is_many and not P.reverse().is_many
 
 
-def refine_with(selector, *args):
+def refine_with(selector: Sequence[int], *args: Sequence[T]) -> Generator[List[T], None, None]:
     for arg in args:
         yield [arg[idx] for idx in selector]
 
@@ -51,13 +53,15 @@ def mul2(x, y):
     return x * y
 
 
-def shuffled(container) -> List:
+def shuffled(container: Iterable[T]) -> List[T]:
+    """ randomly shuffle a list. Guarantees reproducibility by first sorting them. """
     copied = sorted(list(container))
     np.random.shuffle(copied)
     return copied
 
 
 def pick(vals: Iterable[T]) -> T:
+    """ Return one random element from nonempty iterable """
     vals = list(vals)
     if len(vals) == 1:
         return vals[0]
@@ -65,7 +69,7 @@ def pick(vals: Iterable[T]) -> T:
         return vals[np.random.randint(len(vals))]
 
 
-def multiplys(*args):
+def multiplys(*args: np.ndarray) -> Optional[np.ndarray]:
     """Multiplying all matrices, None for empty"""
     temp = None
     for arg in args:

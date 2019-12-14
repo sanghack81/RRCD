@@ -11,10 +11,8 @@ set_dist_ext = Extension("rrpcd.relkern.cy_set_dist",
                          sources=['rrpcd/relkern/cy_set_dist.pyx', 'rrpcd/relkern/c_cy_set_dist.cpp', 'rrpcd/relkern/c_cy_simple_dist.cpp', 'rrpcd/relkern/Assignment.cpp',
                                   'rrpcd/relkern/BipartiteGraph.cpp', 'rrpcd/relkern/Hungarian.cpp'],
                          language='c++',
-                         extra_compile_args=["-std=c++11", "-stdlib=libc++",
-                                             "-mmacosx-version-min=10.7"] if platform == "darwin" else ["-std=c++11"],
-                         extra_link_args=["-std=c++11", "-stdlib=libc++",
-                                          "-mmacosx-version-min=10.7"] if platform == "darwin" else ["-std=c++11"],
+                         extra_compile_args=["-std=c++17", "-mmacosx-version-min=10.9"] if platform == "darwin" else ["-std=c++17"],
+                         extra_link_args=["-std=c++17", "-mmacosx-version-min=10.9"] if platform == "darwin" else ["-std=c++17"],
                          include_dirs=[numpy.get_include()])
 
 setup(

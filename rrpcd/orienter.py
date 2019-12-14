@@ -23,7 +23,6 @@ def robust_sound_rules(g: PDAG, non_colliders=()):
     cnt = 0
     while True:
         cnt += 1
-        # print('robust_sound_rules',cnt)
         if cnt > 500:
             print('something wrong?')
             break
@@ -71,6 +70,7 @@ def robust_sound_rules(g: PDAG, non_colliders=()):
 
         if len(g.oriented()) == mark:
             break
+
     # TODO role of completes?
     if any(g.is_oriented_as(x, y) and g.is_oriented_as(z, y) for x, y, z in tuple(non_colliders)):
         return False
