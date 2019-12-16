@@ -7,8 +7,7 @@ from typing import Set, List, Tuple, FrozenSet, TypeVar, Optional, AbstractSet, 
 
 import numpy as np
 from pyrcds.domain import SkItem, AttributeClass
-from pyrcds.model import PRCM, UndirectedRDep as URDep, enumerate_rdeps, RelationalVariable as RVar, SymTriple, \
-    RelationalPath, RCM, terminal_set
+from pyrcds.model import PRCM, UndirectedRDep as URDep, enumerate_rdeps, RelationalVariable as RVar, SymTriple, RelationalPath, RCM, terminal_set
 from pyrcds.rcds import new_extend, canonical_unshielded_triples
 from pyrcds.utils import group_by
 
@@ -28,6 +27,7 @@ class RCMLearner:
 
     @staticmethod
     def sepset_rules() -> Tuple[str, ...]:
+        """ Rules for how a separating set is determined """
         return 'minimal', 'first', 'full'
 
     @staticmethod
@@ -65,11 +65,10 @@ class RCMLearner:
         # intermediate results
         self.prcm = PRCM(self.schema, set(URDep(dep) for dep in enumerate_rdeps(self.schema, max_rv_hops)))
         # CI test related information
-        self.sepsets = defaultdict(
-            lambda: None)  # key is of the format (cause, effect). separating sets are recorded for any CI query
+        # key is of the format (cause, effect). separating sets are recorded for any CI query
+        self.sepsets = defaultdict(lambda: None)
         # orientation-related information
-        self.orientation_info = OrientationInformation(self.orientation_rule,
-                                                       self.orientation_percentage_threshold)
+        self.orientation_info = OrientationInformation(self.orientation_rule, self.orientation_percentage_threshold)
 
         # stats
         self.rbo_stats = defaultdict(lambda: 0)
@@ -85,11 +84,9 @@ class RCMLearner:
     def reset_orientations(self, reset_prcm=True, reset_orientation_info=True):
         """ Remove """
         if reset_orientation_info:
-            self.orientation_info = OrientationInformation(self.orientation_rule,
-                                                           self.orientation_percentage_threshold)
+            self.orientation_info = OrientationInformation(self.orientation_rule, self.orientation_percentage_threshold)
         if reset_prcm:
-            self.prcm = PRCM(self.schema,
-                             self.prcm.undirected_dependencies | {URDep(d) for d in self.prcm.directed_dependencies})
+            self.prcm = PRCM(self.schema, self.prcm.undirected_dependencies | {URDep(d) for d in self.prcm.directed_dependencies})
 
     def reset_phase_I(self):
         """ Remove """
@@ -127,21 +124,6 @@ class RCMLearner:
                 print(*args, file=self.logfile, flush=True, **kwargs)
         self.__last_log_mode = warning
 
-    # def find_sepset(self, cause: RVar, effect: RVar, conds: AbstractSet[RVar]) -> Optional[Set[RVar]]:
-    #     """ Find a separating set Z among `conds` i.e., U _||_ V | Z """
-    #     if self.sepsets[(cause, effect)] is not None:
-    #         if self.sepsets[(cause, effect)] <= conds:
-    #             return self.sepsets[(cause, effect)]
-    #
-    #     for subset_size in range(len(conds) + 1):
-    #         for sub_conds in set_combinations(conds, subset_size):
-    #             ci_result = self.rci_tester(cause, effect, sub_conds)  # TODO should I use `is_ci`?
-    #             if ci_result.is_independent(self.alpha):
-    #                 if self.aggregator is None or self.aggregated_ci(cause, effect, sub_conds):
-    #                     self.sepsets[(cause, effect)] = sub_conds
-    #                     return sub_conds
-    #     return None
-
     def is_ci(self, cause: RVar, effect: RVar, conds: AbstractSet[RVar], subset_size: int) -> bool:
         """ Perform multiple conditional independence tests given subsets of conditionals until a separating set is found """
         return self.__is_ci(cause, effect, frozenset(conds), subset_size)
@@ -175,8 +157,7 @@ class RCMLearner:
         itemss_4_X = [self.reached(P, i) for i in items_4_Y]  # type: List[Tuple[SkItem]]
 
         selector = [i for i, items in enumerate(itemss_4_X) if items]
-        items_4_Y, itemss_4_X = refine_with(selector, items_4_Y,
-                                            itemss_4_X)  # [items_4_Y[i] for i in selector], [itemss_4_X[i] for i in selector]
+        items_4_Y, itemss_4_X = refine_with(selector, items_4_Y, itemss_4_X)
 
         """ Kernels """
         K_X = self.kernel_matrix(itemss_4_X, X, self.aggregator)
@@ -206,7 +187,7 @@ class RCMLearner:
             to_remove = set()
             for udep in (sorted(udeps_remained) if self.phase_I_order_independence else shuffled(udeps_remained)):
                 for cause, effect in (
-                sorted(udep) if self.phase_I_order_independence else shuffled(udep)):  # for both directions
+                        sorted(udep) if self.phase_I_order_independence else shuffled(udep)):  # for both directions
                     self.__log(f'... {str(cause).rjust(rjust_len)} -- {effect}', verbose=verbose)
                     if self.is_ci(cause, effect, adj(effect) - {cause}, depth):
                         if self.phase_I_order_independence:
@@ -237,15 +218,12 @@ class RCMLearner:
     def kernel_matrix(self, items: Sequence, attr: AttributeClass, aggregator=None) -> Optional[np.ndarray]:
         if isinstance(items[0], SkItem):
             assert aggregator is None
-            return self.kern.K_comp([item[attr] for item in items],
-                                    simple=True)
+            return self.kern.K_comp([item[attr] for item in items], simple=True)
 
         if aggregator is None:
-            return self.kern.K_comp(_safe_list2column([tuple([k[attr] for k in ks]) for ks in items]),
-                                    simple=False)
+            return self.kern.K_comp(_safe_list2column([tuple([k[attr] for k in ks]) for ks in items]), simple=False)
         else:
-            return self.kern.K_comp([self.aggregator([item[attr] for item in _items]) for _items in items],
-                                    simple=True)
+            return self.kern.K_comp([self.aggregator([item[attr] for item in _items]) for _items in items], simple=True)
 
     def RBO_based_tests(self, *, verbose=None):
         self.__log('\nRBO --------------------------------------------------', verbose=verbose)
@@ -344,8 +322,7 @@ class RCMLearner:
                 K_X[True] = self.kernel_matrix(items_4_X, X)
                 K_Y[True] = self.kernel_matrix(items_4_Y, Y)
                 K_rest_X[True] = self.kernel_matrix(rest_itemss_4_X, X)
-                K_agg_rest_X[True] = self.kernel_matrix(rest_itemss_4_X, X,
-                                                        self.aggregator) if self.aggregator is not None else None
+                K_agg_rest_X[True] = self.kernel_matrix(rest_itemss_4_X, X, self.aggregator) if self.aggregator is not None else None
                 Ks[True] = self.kern.KMs(conds, items_4_X)
 
             self.__log(f'RBO:  testing {str(P_X).rjust(rjust_len)} -- {str(V_Y).ljust(ljust_len)}', verbose=verbose)
@@ -378,12 +355,12 @@ class RCMLearner:
                     K_cond = mul2(K_cond, K_Y[True])
 
                 self.rbo_stats['test'] += 1
-                p_val = self.rci_tester.test_CI(K_rest_X[True], K_X[True], K_cond, p_value_only=True,
-                                                cache_key=('RBO' + appendix, P_X, Y, subconds))
+                p_val = self.rci_tester.test_CI(K_rest_X[True], K_X[True], K_cond, p_value_only=True, cache_key=('RBO' + appendix, P_X, Y, subconds))
+
                 if p_val > self.alpha and self.aggregator is not None:
                     self.rbo_stats['test'] += 1
-                    p_val = self.rci_tester.test_CI(K_agg_rest_X[True], K_X[True], K_cond, p_value_only=True,
-                                                    cache_key=('agg-RBO' + appendix, P_X, Y, subconds))
+                    p_val = self.rci_tester.test_CI(K_agg_rest_X[True], K_X[True], K_cond, p_value_only=True, cache_key=('agg-RBO' + appendix, P_X, Y, subconds))
+
                 return p_val
 
             if self.detect_rbo_violations:
@@ -459,13 +436,11 @@ class RCMLearner:
             if lazy_initialized[0]:
                 return
 
-            multi_4_X_PX, items_4_X_PX, items_4_Y_PX, items_4_Z_PX, multi_4_X_PZ, dummy, items_4_Y_PZ, items_4_Z_PZ = self.fetch_for_test(
-                P_X, Y, Q_Z)
+            multi_4_X_PX, items_4_X_PX, items_4_Y_PX, items_4_Z_PX, multi_4_X_PZ, dummy, items_4_Y_PZ, items_4_Z_PZ = self.fetch_for_test(P_X, Y, Q_Z)
 
             K_X[False] = None
             K_XX[False] = self.kernel_matrix(multi_4_X_PZ, X)
-            K_agg_X[False] = self.kernel_matrix(multi_4_X_PZ, X,
-                                                self.aggregator) if self.aggregator is not None else None
+            K_agg_X[False] = self.kernel_matrix(multi_4_X_PZ, X, self.aggregator) if self.aggregator is not None else None
 
             K_Y[False] = self.kernel_matrix(items_4_Y_PZ, Y)
             K_Z[False] = self.kernel_matrix(items_4_Z_PZ, Z)
@@ -483,7 +458,7 @@ class RCMLearner:
                 else:
                     pass
 
-            K_XX[True] = expanded  # self.kernel_matrix(xxx_multi_4_X_PX, X)    #
+            K_XX[True] = expanded
             K_Y[True] = self.kernel_matrix(items_4_Y_PX, Y)
             K_Z[True] = self.kernel_matrix(items_4_Z_PX, Z)
 
@@ -506,7 +481,7 @@ class RCMLearner:
             p_val = self.rci_tester.get_cached(cache_key)
             temp_count = 1
             if p_val is not None and p_val > self.alpha and self.aggregator is not None and (
-            Q.is_many if with_x else P.is_many):
+                    Q.is_many if with_x else P.is_many):
                 p_val = self.rci_tester.get_cached(agg_cache_key)
                 temp_count += 1
             if p_val is not None:
@@ -560,9 +535,7 @@ class RCMLearner:
         def _inner_(subconds, index=0):
             with_x = index == 1
 
-            # p_val = lazy_ci_test(subconds, with_x, False, False)  # old
-            # p_val = lazy_ci_test(subconds, with_x, False, with_x)  # new in UAI 2019
-            p_val = lazy_ci_test(subconds, with_x, False, False)  # back to OLD!!!!!
+            p_val = lazy_ci_test(subconds, with_x, False, False)
             if self.alpha >= p_val:
                 return False, None
 
@@ -615,6 +588,7 @@ class RCMLearner:
                     if not skip_inference:
                         self.orientation_info.add_record(SymTriple(X, Y, Z), {(X, Y), (Z, Y)} <= oriented)
                     continue
+
                 # non-collider (either shielded or unshielded)
                 if (Y, X) in oriented:
                     if not skip_inference:
@@ -659,9 +633,6 @@ class RCMLearner:
             def _inner_(sub_conds):
                 ci_result = self.rci_tester(Rz, Vx, sub_conds)
                 if ci_result.is_independent(self.alpha):
-                    # if self.aggregator is not None and not self.aggregated_ci(Rz, Vx, sub_conds):
-                    #     return False, None
-
                     sepset_attrs = {s.attr for s in sub_conds}
                     for y in candidate_attrs:
                         if x != z:
@@ -749,16 +720,13 @@ class RCMLearner:
             items_4_Z = [pick(items) for items in multi_4_Z]
             items_4_X = [pick(items) for items in multi_4_X]
             selector = [idx for idx in range(len(items_4_X)) if items_4_X[idx] != items_4_Z[idx]]
-            multi_4_X, items_4_X, items_4_Y, items_4_Z = refine_with(selector, multi_4_X, items_4_X, items_4_Y,
-                                                                     items_4_Z)
+            multi_4_X, items_4_X, items_4_Y, items_4_Z = refine_with(selector, multi_4_X, items_4_X, items_4_Y, items_4_Z)
 
             selector_for_X = _unique_idxs(items_4_X)
-            multi_4_X_PX, items_4_X_PX, items_4_Y_PX, items_4_Z_PX = refine_with(selector_for_X, multi_4_X, items_4_X,
-                                                                                 items_4_Y, items_4_Z)
+            multi_4_X_PX, items_4_X_PX, items_4_Y_PX, items_4_Z_PX = refine_with(selector_for_X, multi_4_X, items_4_X, items_4_Y, items_4_Z)
 
             selector_for_Z = _unique_idxs(items_4_Z)
-            multi_4_X_PZ, items_4_X_PZ, items_4_Y_PZ, items_4_Z_PZ = refine_with(selector_for_Z, multi_4_X, items_4_X,
-                                                                                 items_4_Y, items_4_Z)
+            multi_4_X_PZ, items_4_X_PZ, items_4_Y_PZ, items_4_Z_PZ = refine_with(selector_for_Z, multi_4_X, items_4_X, items_4_Y, items_4_Z)
 
             return None, items_4_X_PX, items_4_Y_PX, items_4_Z_PX, multi_4_X_PZ, None, items_4_Y_PZ, items_4_Z_PZ
         else:
@@ -766,7 +734,6 @@ class RCMLearner:
             items_4_Z_PZ = [pick(items) for items in multi_4_Z]
             selector_for_Z = _unique_idxs(items_4_Z_PZ)
             multi_4_X_PZ, items_4_Y_PZ, items_4_Z_PZ = refine_with(selector_for_Z, multi_4_X, items_4_Y, items_4_Z_PZ)
-            # return multi_4_X_PZ, None, items_4_Y_PZ, items_4_Z_PZ
 
             restsxyz = []
             for x_items, y_item, z_items in zip(multi_4_X, items_4_Y, multi_4_Z):

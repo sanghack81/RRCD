@@ -20,16 +20,25 @@ class RCIResult(collections.namedtuple('RCIResult_', ['test_statistic', 'p_value
 
 
 class RCITester:
-    """ Conditional Independence Test with Relational Variables"""
+    """ Conditional Independence Test with Relational Variables """
 
     def __init__(self, kern: RelationalKernelComputer, n_jobs: int = 2):
+        """
+
+        Parameters
+        ----------
+        kern : RelationalKernelComputer
+            an interfact to obtain kernel matrices
+        n_jobs : int
+            a number of threads to be used to test conditional independence. For a large number of null samples, larger number is preferred. recommended 2 to 10 depending on the underlying system.
+        """
         self.kern = kern
         self.datasource = kern.datasource
         self.skeleton = kern.datasource.skeleton
         self.n_jobs = n_jobs
 
         self.__cached_rci_test = lru_cache(maxsize=None)(self.__cached_rci_test)  # keep all results
-        self.cached = dict()    # type: Dict[Hashable, Union[float, Tuple[float, float]]]
+        self.cached = dict()  # type: Dict[Hashable, Union[float, Tuple[float, float]]]
 
     def rci_test(self, cause: RVar, effect: RVar, conds: AbstractSet[RVar], *, transform=None) -> RCIResult:
         """ test RCI with given relational variables where effect must be canonical.
@@ -134,4 +143,5 @@ class RCITester:
         return test_statistic, p_value
 
     def __call__(self, *args, **kwargs) -> Tuple[float, float]:
+        """ Alias for `rci_test` """
         return self.rci_test(*args, **kwargs)

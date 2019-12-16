@@ -222,6 +222,7 @@ class OrientationInformation:
                   flush=True)
             if wrongly_directed:
                 time.sleep(0.1)
+
         for xyz in self.colliders():
             X, Y, Z = xyz
             count_top, count_bottom = 0, 0
@@ -236,6 +237,7 @@ class OrientationInformation:
                   flush=True)
             if wrongly_directed:
                 time.sleep(0.1)
+
         for xyz in self.non_colliders():
             X, Y, Z = xyz
             count_top, count_bottom = 0, 0
@@ -250,6 +252,7 @@ class OrientationInformation:
                   flush=True)
             if wrongly_directed:
                 time.sleep(0.1)
+
         for xy_or_xyz in self.undetermined():
             if isinstance(xy_or_xyz, SymTriple):
                 xyz = xy_or_xyz
@@ -283,6 +286,7 @@ class OrientationInformation:
                             else:
                                 count_bottom += 1
                 print(f'{str(X).center(just)} -?- {str(Y).center(just)}     {"".center(just)} with (X-->Y: {count_top}, X<--Y: {count_bottom})', flush=True)
+
         print('------------------------------------')
 
 
@@ -299,7 +303,6 @@ class Orienter:
 
         assert not any((y, x) in singles for x, y in singles)
         assert not (colliders & non_colliders)
-        # singles = {(x, y) for x, y in singles if (y, x) not in singles}
         # colliders, non_colliders = colliders - non_colliders, non_colliders - colliders
 
         if background_knowledge:
@@ -358,18 +361,18 @@ class Orienter:
 
         if gs is not None:
             return gs
+
         raise NotImplementedError()
 
     def orient(self, strategy='mostly-shared') -> PDAG:
         # maximize orientation
         # TODO efficiency
-        # all_info = list(self.singles | self.colliders | self.non_colliders)
         all_info = sorted(self.singles) + sorted(self.colliders) + sorted(self.non_colliders)
         gs = list()  # type: List[PDAG]
-        # print(len(all_info))
         for num_remove in range(len(all_info) + 1):
             for sub_info in combinations(all_info, len(all_info) - num_remove):
                 sub_info = set(sub_info)
+
                 # quick validation
                 violated = False
                 for xyz in sub_info:
@@ -401,6 +404,7 @@ class Orienter:
 
         if len(gs) == 1:
             return gs[0]
+
         if strategy == 'mostly-shared':
             if len(gs) >= 3:
                 g_score = [0] * len(gs)
@@ -443,5 +447,6 @@ class Orienter:
 
         if not robust_sound_rules(working_pdag, non_colliders):
             return None
+
         completes(working_pdag, non_colliders)
         return working_pdag

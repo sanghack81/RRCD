@@ -22,6 +22,7 @@ def average_aggregator(vals: Collection[float]) -> float:
 
 
 def with_default(v: Optional[T], dflt: Optional[T]) -> Optional[T]:
+    """ Returns default value if the given value is unspecified, i.e., None """
     return dflt if v is None else v
 
 
@@ -41,11 +42,13 @@ def is_1to1(P: RelationalPath) -> bool:
 
 
 def refine_with(selector: Sequence[int], *args: Sequence[T]) -> Generator[List[T], None, None]:
+    """ Returns subsequences of given sequences as specified by selector (sequence of indices) """
     for arg in args:
         yield [arg[idx] for idx in selector]
 
 
 def mul2(x, y):
+    """ Multiplication of two values. Treat as 1 if one value is None. If both values are None, None is returned """
     if x is None:
         return y
     if y is None:
