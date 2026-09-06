@@ -114,8 +114,8 @@ class OrientationInformation:
     OriRecord = namedtuple('Record_', ['triple', 'is_collider'])
 
     def __init__(self, rule, threshold=None):
-        assert rule in {'conservative', 'majority', 'percentage'}, f'unknown {self.rule}'
-        assert threshold is None or self.threshold >= 0.5, f'threshold is smaller than 0.5 (> {self.threshold}).'
+        assert rule in {'conservative', 'majority', 'percentage'}, f'unknown {rule}'
+        assert threshold is None or threshold >= 0.5, f'threshold is smaller than 0.5 (> {threshold}).'
 
         self.rule = rule
         self.threshold = threshold
