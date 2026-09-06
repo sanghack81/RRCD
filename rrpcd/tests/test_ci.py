@@ -8,7 +8,9 @@ from pyrcds.utils import average_agg
 from pyrcds.utils import linear_gaussian
 from pyrcds.utils import normal_sampler
 
-from rrpcd.rel_kernel import normalize_by_diag
+from rrpcd.data import DataCenter
+from rrpcd.rci_test import RCITester
+from rrpcd.rel_kernel import RBFKernelComputer, normalize_by_diag
 from rrpcd.utils import multiplys
 
 
@@ -53,3 +55,13 @@ def test_company():
 
     generate_values_for_skeleton(rcm, skeleton)
     normalize_skeleton(skeleton)
+
+    kernel = RBFKernelComputer(DataCenter(skeleton), additive=0.01, n_jobs=1)
+    tester = RCITester(kernel, n_jobs=1)
+    effect = next(variable for variable in effects if len(rcm.pa(variable)) == 2)
+    cause, condition = sorted(rcm.pa(effect))
+    kx, ky, kz = [kernel[variable] for variable in (cause, effect, condition)]
+    for conditioning in (None, kz):
+        statistic, p_value = tester.test_CI(kx, ky, conditioning, num_nulls=32)
+        assert np.isfinite(statistic)
+        assert 0 <= p_value <= 1

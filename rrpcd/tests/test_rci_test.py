@@ -7,9 +7,9 @@ from rrpcd.data import purge_empty, DataCenter
 
 
 def test_purge():
-    x = np.array([(1, 2), (3,), (4, 5, 6), tuple(), (4, 5), (6, 7), tuple()])
-    y = np.array([(1, 2), (3,), tuple(), (4, 5, 6), (4, 5), (6, 7), tuple()])
-    z = np.array([(1, 2), (3,), tuple(), (4, 5, 6), tuple(), (6, 7), (1, 2, 3)])
+    x = np.array([(1, 2), (3,), (4, 5, 6), tuple(), (4, 5), (6, 7), tuple()], dtype=object)
+    y = np.array([(1, 2), (3,), tuple(), (4, 5, 6), (4, 5), (6, 7), tuple()], dtype=object)
+    z = np.array([(1, 2), (3,), tuple(), (4, 5, 6), tuple(), (6, 7), (1, 2, 3)], dtype=object)
 
     mat = np.vstack([x, y, z]).T
 

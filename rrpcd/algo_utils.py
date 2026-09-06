@@ -11,7 +11,7 @@ def _safe_list2column(listlike: List[Tuple]) -> np.ndarray:
     If the sizes of tuples are the same, np.array may return a matrix where the number of columns corresponds to the common length of tuples.
     This method prevents such an unintended consequence.
     """
-    return np.array([tuple([0, 1, 2]), tuple([0, 1])] + listlike)[2:][:, None]
+    return np.array([tuple([0, 1, 2]), tuple([0, 1])] + listlike, dtype=object)[2:][:, None]
 
 
 def _unique_idxs(i_xs: Sequence[int]) -> List[int]:
