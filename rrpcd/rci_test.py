@@ -7,7 +7,7 @@ from typing import Set, FrozenSet, Tuple, Union, Optional, Hashable, AbstractSet
 import numpy as np
 from pyrcds.model import RelationalVariable as RVar
 from sdcit.hsic import c_HSIC
-from sdcit.sdcit import c_SDCIT
+from sdcit.sdcit_mod import c_SDCIT
 
 from rrpcd.data import purge_empty
 from rrpcd.rel_kernel import RelationalKernelComputer

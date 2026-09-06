@@ -2,7 +2,16 @@ import numpy as np
 import pytest
 from pyrcds.utils import median_except_diag
 
+from rrpcd.algo_utils import _safe_list2column
 from rrpcd.utils import reproducible
+
+
+@pytest.mark.parametrize('values', [[], [()], [(1,)], [(1, 2), (3, 4)], [(1,), (2, 3)]])
+def test_tuple_column(values):
+    column = _safe_list2column(values)
+    assert column.shape == (len(values), 1)
+    assert column.dtype == object
+    assert column[:, 0].tolist() == values
 
 
 def test_reproducible_restores_random_state_on_exception():
