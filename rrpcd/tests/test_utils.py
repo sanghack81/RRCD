@@ -1,5 +1,22 @@
 import numpy as np
+import pytest
 from pyrcds.utils import median_except_diag
+
+from rrpcd.utils import reproducible
+
+
+def test_reproducible_restores_random_state_on_exception():
+    @reproducible
+    def interrupted():
+        np.random.random(10)
+        raise RuntimeError('interrupted experiment')
+
+    np.random.seed(0)
+    expected = np.random.random(3)
+    np.random.seed(0)
+    with pytest.raises(RuntimeError, match='interrupted experiment'):
+        interrupted(seed=999)
+    np.testing.assert_array_equal(np.random.random(3), expected)
 
 
 def test_median_except_diag():
