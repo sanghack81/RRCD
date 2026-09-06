@@ -77,7 +77,7 @@ def sizing_method(base_size: int, schema: RelationalSchema):
     sizing = {ic: base_size for ic in schema.item_classes}
     for rc in schema.relationship_classes:
         all_many = all(rc.is_many(ec) for ec in rc.entity_classes)
-        all_one = all(rc.is_many(ec) for ec in rc.entity_classes)
+        all_one = all(not rc.is_many(ec) for ec in rc.entity_classes)
         if all_many:
             sizing[rc] = 2 * base_size
         elif all_one:
