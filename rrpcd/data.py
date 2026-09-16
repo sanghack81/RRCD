@@ -11,9 +11,8 @@ def purge_empty(mat: np.ndarray, columns: Tuple[int, ...] = (0, 1), return_selec
     """Remove rows where cells are empty for specified columns"""
     if not columns:
         return mat
-    vfunc = np.vectorize(lambda x: bool(x))
-    submat = mat[:, columns]
-    selected_rows = np.all(vfunc(submat), axis=1)
+    submat = mat[:, list(columns)]
+    selected_rows = np.all(submat.astype(bool), axis=1)
     if return_selected:
         return mat[selected_rows, :], selected_rows
     else:

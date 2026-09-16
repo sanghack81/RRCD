@@ -1,12 +1,15 @@
 tqdm
-pandas
+pandas>=1.2
 cython
 seaborn
 matplotlib
 pytest
 scipy
 networkx
-numpy
+numpy>=1.20
 joblib
 scikit-learn
 pygraphviz
+flake8
+pylint
+pyRCDs @ git+https://github.com/sanghack81/pyRCDs.git

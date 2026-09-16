@@ -3,4 +3,7 @@
 .cache
 build
 __pycache__
+*.py[cod]
+.pytest_cache/
+*.so
 rrpcd.egg-info

@@ -37,7 +37,7 @@ class RCITester:
         self.skeleton = kern.datasource.skeleton
         self.n_jobs = n_jobs
 
-        self.__cached_rci_test = lru_cache(maxsize=None)(self.__cached_rci_test)  # keep all results
+        self.__cached_rci_test = lru_cache(maxsize=4096)(self.__cached_rci_test)  # keep all results
         self.cached = dict()  # type: Dict[Hashable, Union[float, Tuple[float, float]]]
 
     def rci_test(self, cause: RVar, effect: RVar, conds: AbstractSet[RVar], *, transform=None) -> RCIResult:

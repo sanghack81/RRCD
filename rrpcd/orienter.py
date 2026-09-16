@@ -2,7 +2,7 @@ import sys
 import time
 from collections import namedtuple
 from itertools import combinations, chain
-from typing import Set, List, Tuple, FrozenSet, Union, TypeVar, Optional
+from typing import Set, Tuple, FrozenSet, Union, TypeVar, Optional
 
 import numpy as np
 from pyrcds.domain import AttributeClass
@@ -24,8 +24,7 @@ def robust_sound_rules(g: PDAG, non_colliders=()):
     while True:
         cnt += 1
         if cnt > 500:
-            print('something wrong?')
-            break
+            raise RuntimeError('robust_sound_rules: infinite loop detected (conflicting orientation rules or too many nodes)')
         mark = len(g.oriented())
         for non_collider in tuple(non_colliders):
             x, y, z = non_collider
@@ -199,93 +198,50 @@ class OrientationInformation:
         print('---------- Orientation Information -----------')
         attributes = set(chain(*[list(xy_or_xyz) for xy_or_xyz in
                                  self.orientations() | self.undetermined() | self.non_colliders() | self.colliders()]))
+        if not attributes:
+            print('------------------------------------')
+            return
         just = max(len(str(attr)) for attr in attributes) + 2
 
+        def _get_counts(triple_to_check, is_col):
+            t, b = 0, 0
+            for r in self.records:
+                if r.triple == triple_to_check:
+                    if r.is_collider == is_col:
+                        t += 1
+                    b += 1
+            return t, b
+
         for X, Y in self.orientations():
-            count_top, count_bottom = 0, 0
-            if X < Y:
-                xyx = SymTriple(X, Y, X)
-                for record in self.records:
-                    if record.triple == xyx:
-                        if record.is_collider:
-                            count_top += 1
-                        count_bottom += 1
-            else:
-                yxy = SymTriple(Y, X, Y)
-                for record in self.records:
-                    if record.triple == yxy:
-                        if not record.is_collider:
-                            count_top += 1
-                        count_bottom += 1
-            wrongly_directed = true_rcm is not None and true_cdg.is_oriented_as(Y, X)
-            print(f'{str(X).center(just)} --> {str(Y).center(just)}     {"".center(just)} with ({count_top}/{count_bottom}) (RBO)', file=sys.stderr if wrongly_directed else sys.stdout,
-                  flush=True)
-            if wrongly_directed:
+            t, b = _get_counts(SymTriple(X, Y, X) if X < Y else SymTriple(Y, X, Y), X < Y)
+            wrongly = true_rcm is not None and true_cdg.is_oriented_as(Y, X)
+            print(f'{str(X).center(just)} --> {str(Y).center(just)}     {"".center(just)} with ({t}/{b}) (RBO)', file=sys.stderr if wrongly else sys.stdout, flush=True)
+            if wrongly:
                 time.sleep(0.1)
 
-        for xyz in self.colliders():
-            X, Y, Z = xyz
-            count_top, count_bottom = 0, 0
-            for record in self.records:
-                if record.triple == xyz:
-                    if record.is_collider:
-                        count_top += 1
-                    count_bottom += 1
-            wrongly_directed = true_rcm is not None and (true_cdg.is_oriented_as(Y, X) or true_cdg.is_oriented_as(Y, Z))
-            print(f'{str(X).center(just)} --> {str(Y).center(just)} <-- {str(Z).center(just)} with ({count_top}/{count_bottom}) (Collider)',
-                  file=sys.stderr if wrongly_directed else sys.stdout,
-                  flush=True)
-            if wrongly_directed:
+        for X, Y, Z in self.colliders():
+            t, b = _get_counts(SymTriple(X, Y, Z), True)
+            wrongly = true_rcm is not None and (true_cdg.is_oriented_as(Y, X) or true_cdg.is_oriented_as(Y, Z))
+            print(f'{str(X).center(just)} --> {str(Y).center(just)} <-- {str(Z).center(just)} with ({t}/{b}) (Collider)', file=sys.stderr if wrongly else sys.stdout, flush=True)
+            if wrongly:
                 time.sleep(0.1)
 
-        for xyz in self.non_colliders():
-            X, Y, Z = xyz
-            count_top, count_bottom = 0, 0
-            for record in self.records:
-                if record.triple == xyz:
-                    if not record.is_collider:
-                        count_top += 1
-                    count_bottom += 1
-            wrongly_directed = true_rcm is not None and true_cdg.is_oriented_as(X, Y) and true_cdg.is_oriented_as(Z, Y)
-            print(f'{str(X).center(just)} --- {str(Y).center(just)} --- {str(Z).center(just)} with ({count_top}/{count_bottom}) (Non-collider)',
-                  file=sys.stderr if wrongly_directed else sys.stdout,
-                  flush=True)
-            if wrongly_directed:
+        for X, Y, Z in self.non_colliders():
+            t, b = _get_counts(SymTriple(X, Y, Z), False)
+            wrongly = true_rcm is not None and true_cdg.is_oriented_as(X, Y) and true_cdg.is_oriented_as(Z, Y)
+            print(f'{str(X).center(just)} --- {str(Y).center(just)} --- {str(Z).center(just)} with ({t}/{b}) (Non-collider)', file=sys.stderr if wrongly else sys.stdout, flush=True)
+            if wrongly:
                 time.sleep(0.1)
 
         for xy_or_xyz in self.undetermined():
             if isinstance(xy_or_xyz, SymTriple):
-                xyz = xy_or_xyz
-                X, Y, Z = xyz
-                count_top, count_bottom = 0, 0
-                for record in self.records:
-                    if record.triple == xyz:
-                        if record.is_collider:
-                            count_top += 1
-                        else:
-                            count_bottom += 1
-
-                print(f'{str(X).center(just)} -?- {str(Y).center(just)} -?- {str(Z).center(just)} with (collider: {count_top}, non-collider: {count_bottom})', flush=True)
+                X, Y, Z = xy_or_xyz
+                t, b = _get_counts(SymTriple(X, Y, Z), True)
+                print(f'{str(X).center(just)} -?- {str(Y).center(just)} -?- {str(Z).center(just)} with (collider: {t}, non-collider: {b - t})', flush=True)
             else:
                 X, Y = xy_or_xyz
-                count_top, count_bottom = 0, 0
-                if X < Y:
-                    xyx = SymTriple(X, Y, X)
-                    for record in self.records:
-                        if record.triple == xyx:
-                            if record.is_collider:
-                                count_top += 1
-                            else:
-                                count_bottom += 1
-                else:
-                    yxy = SymTriple(Y, X, Y)
-                    for record in self.records:
-                        if record.triple == yxy:
-                            if not record.is_collider:
-                                count_top += 1
-                            else:
-                                count_bottom += 1
-                print(f'{str(X).center(just)} -?- {str(Y).center(just)}     {"".center(just)} with (X-->Y: {count_top}, X<--Y: {count_bottom})', flush=True)
+                t, b = _get_counts(SymTriple(X, Y, X) if X < Y else SymTriple(Y, X, Y), X < Y)
+                print(f'{str(X).center(just)} -?- {str(Y).center(just)}     {"".center(just)} with (X-->Y: {t}, X<--Y: {b - t})', flush=True)
 
         print('------------------------------------')
 

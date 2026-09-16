@@ -1,5 +1,4 @@
-from distutils.core import setup
-from distutils.extension import Extension
+from setuptools import setup, Extension
 from sys import platform
 
 import numpy
@@ -19,6 +18,7 @@ setup(
     name='rrpcd',
     packages=['rrpcd', 'rrpcd._UAI_2019', 'rrpcd.experiments', 'rrpcd.relkern', 'rrpcd.tests'],
     version=__version__,
+    python_requires='>=3.12',
     author='Sanghack Lee',
     author_email='sanghack.lee@gmail.com',
 

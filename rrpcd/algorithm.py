@@ -75,11 +75,11 @@ class RCMLearner:
         self.post_rbo_stats = defaultdict(lambda: 0)
         self.saved_by_aggregated_ci = set()
 
-        self.__is_ci = lru_cache(maxsize=None)(self.__is_ci)
-        self.__aggregated_ci = lru_cache(maxsize=None)(self.__aggregated_ci)
+        self.__is_ci = lru_cache(maxsize=4096)(self.__is_ci)
+        self.__aggregated_ci = lru_cache(maxsize=4096)(self.__aggregated_ci)
         self.__last_log_mode = None
 
-        self.reached = lru_cache(maxsize=None)(self.reached)
+        self.reached = lru_cache(maxsize=4096)(self.reached)
 
     def reset_orientations(self, reset_prcm=True, reset_orientation_info=True):
         """ Remove """

@@ -5,7 +5,6 @@ from typing import Optional, Dict, Iterable, AbstractSet, Sequence, TypeVar
 import numpy as np
 import numpy.ma as ma
 from numpy import diag, zeros
-from numpy.core.umath import sqrt
 from pyrcds.model import enumerate_rvars, RelationalVariable as RV
 from sklearn.metrics import euclidean_distances
 
@@ -24,7 +23,7 @@ def normalize_by_diag(k: Optional[np.ndarray]) -> Optional[np.ndarray]:
     # TODO should we emit warnings?
     diag_array[diag_array == 0.] = 1.  # will divide by 1
 
-    x = 1. / sqrt(np.repeat(diag_array[:, None], len(k), axis=1))
+    x = 1. / np.sqrt(np.repeat(diag_array[:, None], len(k), axis=1))
     k = (k * x) * x.transpose()
     return k
 
